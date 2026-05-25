@@ -1,6 +1,6 @@
 # MouseInc.Settings
 
-MouseInc 配置界面 - 基于 Vue 3 + Vite 的现代化设置面板
+MouseInc 配置界面 - 基于 Vue 3 + Vite 的现代化设置面板（原作者的ocr识别错误，更新后重新上传）
 
 [![Build Status](https://github.com/shuax/MouseInc.Settings/actions/workflows/build-and-package.yml/badge.svg?branch=main)](https://github.com/shuax/MouseInc.Settings/actions/workflows/build-and-package.yml)
 
