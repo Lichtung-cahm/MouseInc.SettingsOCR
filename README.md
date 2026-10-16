@@ -1,21 +1,34 @@
-# MouseInc.Settings
+# MouseInc.SettingsOCR
 
-MouseInc 配置界面 - 基于 Vue 3 + Vite 的现代化设置面板（原作者的ocr识别错误，更新后重新上传）
+MouseInc 配置界面，以及使用 Windows 本地识别引擎的图片文字识别工具。
 
-[![Build Status](https://github.com/shuax/MouseInc.Settings/actions/workflows/build-and-package.yml/badge.svg?branch=main)](https://github.com/shuax/MouseInc.Settings/actions/workflows/build-and-package.yml)
+[![Build Status](https://github.com/Lichtung-cahm/MouseInc.SettingsOCR/actions/workflows/build-and-package.yml/badge.svg?branch=main)](https://github.com/Lichtung-cahm/MouseInc.SettingsOCR/actions/workflows/build-and-package.yml)
+
+## 下载与运行
+
+在 [Releases](https://github.com/Lichtung-cahm/MouseInc.SettingsOCR/releases) 下载：
+
+- `MouseInc.Settings.zip`：离线设置界面，保持 ZIP 文件名，将它放在 MouseInc 2.13.0 或更新版本的 `MouseInc.exe` 旁边，不要解压这个 ZIP。设置窗口需要 WebView2 Runtime。
+- `MouseInc.SettingsOCR-Windows-Portable.zip`（提供时）：完整便携包，解压后双击 `MouseInc.exe`，双击托盘图标打开设置；无需 Node.js、npm 或 Python。
+
+本仓库编译的是设置界面，不能从这些前端源码编译出 MouseInc 主程序。便携包使用独立提供的上游主程序，来源、版本和校验值见包内 `UPSTREAM.txt`。请先退出其他 MouseInc 实例再运行新包。
+
+便携包的 `OCR-Clipboard.cmd` 可以将剪贴板图片识别成文字：截图并复制图片后双击运行，再粘贴识别结果。它使用 Windows 10/11 的本地 OCR，无需 API key，不上传截图，也不会自动粘贴；需要已安装相应的 Windows OCR 语言。它独立于主程序内原有的在线 OCR 接口，不会自动改写已有热键和手势配置。
+
+完整使用说明见 [portable/README.txt](portable/README.txt)。旧的 `scripts/fix-*.py` 是针对个人路径的维护脚本，请勿直接运行；它们不包含在便携包中。
 
 ## 简介
 
-MouseInc.Settings 是 [MouseInc](https://github.com/shuax/MouseInc) 鼠标手势软件的配置界面，采用现代化的前端技术栈构建，提供直观、美观的设置体验。
+本项目基于 [shuax/MouseInc.Settings](https://github.com/shuax/MouseInc.Settings) 设置界面，依赖 MouseInc 主程序提供本地配置通道。
 
 ## 技术栈
 
 - **Vue 3.5.x** - 渐进式 JavaScript 框架
-- **Vite 5.x** - 下一代前端构建工具
+- **Vite 8.x** - 前端构建工具
 - **Element Plus 2.x** - 基于 Vue 3 的组件库
 - **Vuex 4.x** - 状态管理
-- **Vue Router 4.x** - 路由管理
-- **Vue I18n 10.x** - 国际化支持
+- **Vue Router 5.x** - 路由管理
+- **Vue I18n 11.x** - 国际化支持
 
 ## 功能特性
 
@@ -32,18 +45,18 @@ MouseInc.Settings 是 [MouseInc](https://github.com/shuax/MouseInc) 鼠标手势
 
 ### 前置要求
 
-- [Node.js](https://nodejs.org/) (推荐 v22+)
+- [Node.js](https://nodejs.org/) 22.13+ 或更新的受支持版本
 - npm (随 Node.js 安装)
 
 ### 安装步骤
 
 ```bash
 # 克隆仓库
-git clone https://github.com/shuax/MouseInc.Settings.git
-cd MouseInc.Settings
+git clone https://github.com/Lichtung-cahm/MouseInc.SettingsOCR.git
+cd MouseInc.SettingsOCR
 
 # 安装依赖
-npm install
+npm ci
 
 # 启动开发服务器（自动打开浏览器）
 npm run dev
@@ -111,8 +124,20 @@ src/
 
 ## CI/CD
 
-项目已配置 GitHub Actions，推送到 main 分支时自动构建。
+推送到 main 分支时自动构建设置界面。新增 `Package Windows release` 工作流可手动构建离线包；推送 `v*` 标签会发布离线设置包及校验值。
+
+本地先运行 `npm ci`、`npm run build`，再运行：
+
+```powershell
+# 只生成主程序可直接读取的离线 ZIP
+./scripts/package-windows.ps1 -SettingsOnly
+
+# 将你独立取得的 MouseInc 主程序与设置界面、本地 OCR 工具组装为便携包
+./scripts/package-windows.ps1 -MouseIncExePath 'C:/path/to/MouseInc.exe'
+```
+
+输出位于 `artifacts/`。完整便携包的在线构建需要提供主程序的 HTTPS 直链和 SHA-256；主程序下载失败或校验失败会中止构建。发布流程不包含已有个人配置、日志和旧维护脚本。
 
 ## 许可证
 
-本项目基于 MouseInc 开源项目，遵循相应许可证。
+上游设置界面见 [shuax/MouseInc.Settings](https://github.com/shuax/MouseInc.Settings)。MouseInc 主程序由其作者独立分发；本仓库不声明其源码开放，也不替上游授予新的使用或分发许可。
