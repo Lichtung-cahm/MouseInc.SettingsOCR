@@ -2,9 +2,11 @@ MouseInc.SettingsOCR Windows 便携版
 
 使用方法
 1. 将整个压缩包解压到有写入权限的文件夹。
-2. 双击 MouseInc.exe 启动。若已有其他 MouseInc 实例，请先从其托盘菜单退出，再运行本目录中的程序。
-3. 双击系统托盘的 MouseInc 图标打开设置。首次启动由主程序生成本目录的 MouseInc.json。
+2. 双击 OpenSettings.exe（打开设置）。它会启动本目录的 MouseInc，并在默认浏览器打开本地设置界面。
+3. 如果只需要鼠标手势后台运行，也可以单独启动 MouseInc.exe。首次启动由主程序生成本目录的 MouseInc.json。
 4. MouseInc.Settings.zip 是离线设置界面，请保留文件名并与 MouseInc.exe 放在同一目录，不要解压这个内层 ZIP。
+5. 若提示其他目录的 MouseInc 正在运行，请先从其托盘菜单退出旧实例，再运行 OpenSettings.exe。
+6. 浏览器设置页面仅连接本机。保留 OpenSettings.exe 后台运行以提供网页文件；长时间不使用后，重新双击即可。
 
 本地图片文字识别
 1. 使用截图工具将图片复制到剪贴板。
@@ -14,7 +16,8 @@ MouseInc.SettingsOCR Windows 便携版
 
 运行要求
 - Windows 10/11；本地 OCR 使用系统自带的 Windows PowerShell 5.1 和已安装的 Windows OCR 语言。
-- 设置窗口需要 Microsoft Edge WebView2 Runtime。多数 Windows 10/11 已有该组件；缺少时可从微软官网下载：
+- OpenSettings.exe 使用 .NET Framework 4.8 和默认浏览器，不依赖原来的内嵌设置窗口。
+- 如果使用原主程序的托盘设置窗口，它需要 Microsoft Edge WebView2 Runtime；缺少时可从微软官网下载：
   https://developer.microsoft.com/microsoft-edge/webview2/
 - 如果提示没有 OCR 语言，在 Windows 的语言设置中安装所需语言及文字识别组件。
 - 不需要 Node.js、npm 或 Python。
@@ -22,6 +25,7 @@ MouseInc.SettingsOCR Windows 便携版
 内容与来源
 - MouseInc.exe 是独立的上游主程序，不是本项目从源码编译出的文件。具体来源和 SHA-256 见 UPSTREAM.txt。
 - MouseInc.Settings.zip 由本仓库 Vue 设置界面源码构建。
+- OpenSettings.exe 由本仓库 launcher/OpenSettings.cs 编译，提供浏览器设置入口。
 - scripts/ocr-local.ps1 使用 Windows 本地 OCR，不依赖第三方识别接口。
 - 此包不含个人 MouseInc.json、旧的固定 D 盘维护脚本、截图或调试日志。
 
