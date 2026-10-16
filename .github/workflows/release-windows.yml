@@ -1,0 +1,149 @@
+name: Package Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_type:
+        description: 'Settings archive only, or complete Windows portable package'
+        type: choice
+        options:
+          - portable
+          - settings
+        default: settings
+        required: true
+      mouseinc_url:
+        description: 'Official MouseInc.exe HTTPS URL (or set repository variable MOUSEINC_DOWNLOAD_URL)'
+        type: string
+        required: false
+      mouseinc_sha256:
+        description: 'Expected official .exe SHA-256 (or set repository variable MOUSEINC_SHA256)'
+        type: string
+        required: false
+      publish_release:
+        description: 'Publish the requested package to the selected v* tag; leave off for downloadable build artifacts'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      PACKAGE_TYPE: ${{ github.event_name == 'push' && 'settings' || inputs.package_type }}
+      EVENT_NAME: ${{ github.event_name }}
+      MOUSEINC_DOWNLOAD_URL: ${{ inputs.mouseinc_url || vars.MOUSEINC_DOWNLOAD_URL }}
+      MOUSEINC_SHA256: ${{ inputs.mouseinc_sha256 || vars.MOUSEINC_SHA256 }}
+      PUBLISH_RELEASE: ${{ github.event_name == 'push' || inputs.publish_release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate release inputs
+        shell: pwsh
+        run: |
+          # Tags always build the settings archive. Add the full portable package
+          # when both upstream download variables have been configured.
+          if ($env:EVENT_NAME -eq 'push' -and $env:MOUSEINC_DOWNLOAD_URL -and $env:MOUSEINC_SHA256) {
+            $env:PACKAGE_TYPE = 'portable'
+            'PACKAGE_TYPE=portable' >> $env:GITHUB_ENV
+          }
+          if ($env:PACKAGE_TYPE -notin @('settings', 'portable')) {
+            throw 'Select settings or portable packaging.'
+          }
+          if ($env:PACKAGE_TYPE -eq 'portable') {
+            $uri = $null
+            if (-not [Uri]::TryCreate($env:MOUSEINC_DOWNLOAD_URL, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne 'https') {
+              throw 'Portable packaging requires the official MouseInc.exe HTTPS URL. Supply the workflow input or repository variable MOUSEINC_DOWNLOAD_URL.'
+            }
+            if ($env:MOUSEINC_SHA256 -notmatch '^[a-fA-F0-9]{64}$') {
+              throw 'Portable packaging requires the official executable SHA-256. Supply the workflow input or repository variable MOUSEINC_SHA256.'
+            }
+          }
+          if ($env:PUBLISH_RELEASE -eq 'true') {
+            if ($env:GITHUB_REF -notlike 'refs/tags/v*') {
+              throw 'Select an existing v* tag to publish a release, or leave publish_release unchecked.'
+            }
+          }
+          "Requested package: $($env:PACKAGE_TYPE)" >> $env:GITHUB_STEP_SUMMARY
+          if ($env:PACKAGE_TYPE -eq 'settings') {
+            'The settings archive requires an existing compatible MouseInc.exe; this build does not include the desktop executable.' >> $env:GITHUB_STEP_SUMMARY
+          }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build settings
+        run: npm run build
+
+      - name: Package requested deliverables
+        shell: pwsh
+        run: |
+          if ($env:PACKAGE_TYPE -eq 'settings') {
+            ./scripts/package-windows.ps1 -SettingsOnly
+          } else {
+            ./scripts/package-windows.ps1
+          }
+
+      - name: Upload settings archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseInc.Settings
+          path: artifacts/MouseInc.Settings.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload complete portable package
+        if: env.PACKAGE_TYPE == 'portable'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MouseInc.SettingsOCR-Windows-Portable
+          path: artifacts/MouseInc.SettingsOCR-Windows-Portable.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: SHA256SUMS
+          path: artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish tagged release
+        if: env.PUBLISH_RELEASE == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF.Substring('refs/tags/'.Length)
+          gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output 'This tag already has a release; preserving its uploaded assets.'
+            exit 0
+          }
+          $assets = @('artifacts/MouseInc.Settings.zip', 'artifacts/SHA256SUMS.txt')
+          if ($env:PACKAGE_TYPE -eq 'portable') {
+            $assets += 'artifacts/MouseInc.SettingsOCR-Windows-Portable.zip'
+          }
+          $notes = @(
+            'MouseInc.Settings.zip contains the offline settings interface. Place this ZIP next to a compatible MouseInc.exe (2.13.0 or newer).',
+            'The settings project does not compile the separately distributed MouseInc desktop program.',
+            'Verify downloads using SHA256SUMS.txt.'
+          )
+          if ($env:PACKAGE_TYPE -eq 'portable') {
+            $notes += 'MouseInc.SettingsOCR-Windows-Portable.zip also includes the supplied upstream executable and the local clipboard OCR launcher. Extract the archive and read README.txt.'
+          }
+          $notes | Set-Content -LiteralPath artifacts/RELEASE_NOTES.md -Encoding utf8
+          gh release create $tag @assets --repo $env:GITHUB_REPOSITORY --verify-tag --notes-file artifacts/RELEASE_NOTES.md --title $tag
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release creation failed.' }
