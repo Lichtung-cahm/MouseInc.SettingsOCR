@@ -9,7 +9,9 @@ MouseInc 配置界面，以及使用 Windows 本地识别引擎的图片文字�
 在 [Releases](https://github.com/Lichtung-cahm/MouseInc.SettingsOCR/releases) 下载：
 
 - `MouseInc.Settings.zip`：离线设置界面，保持 ZIP 文件名，将它放在 MouseInc 2.13.0 或更新版本的 `MouseInc.exe` 旁边，不要解压这个 ZIP。设置窗口需要 WebView2 Runtime。
-- `MouseInc.SettingsOCR-Windows-Portable.zip`（提供时）：完整便携包，解压后双击 `MouseInc.exe`，双击托盘图标打开设置；无需 Node.js、npm 或 Python。
+- `MouseInc.SettingsOCR-Windows-Portable.zip`（提供时）：完整便携包，解压后双击 `OpenSettings.exe`，它会自动启动主程序并在浏览器打开本地设置；无需 Node.js、npm 或 Python。
+
+如果双击托盘图标无法显示设置，请使用 `OpenSettings.exe`。该入口使用 .NET Framework 4.8 和默认浏览器，在本机提供离线网页并连接主程序的配置通道，无需依赖原有内嵌设置窗口。仅需后台鼠标手势时，可以单独启动 `MouseInc.exe`。
 
 本仓库编译的是设置界面，不能从这些前端源码编译出 MouseInc 主程序。便携包使用独立提供的上游主程序，来源、版本和校验值见包内 `UPSTREAM.txt`。请先退出其他 MouseInc 实例再运行新包。
 
