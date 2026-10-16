@@ -114,6 +114,7 @@ foreach ($match in [regex]::Matches($index, '(?:src|href)=["''](/mouseinc/[^"''?
 if (-not $SettingsOnly) {
   Assert-RegularFile (Join-Path $repoRoot 'scripts/ocr-local.ps1') 'Local OCR script'
   Assert-RegularFile (Join-Path $repoRoot 'portable/README.txt') 'Portable package instructions'
+  Assert-RegularFile (Join-Path $repoRoot 'launcher/OpenSettings.cs') 'Settings launcher source'
   if ($MouseIncExePath -and $MouseIncDownloadUrl) {
     throw 'Provide MouseIncExePath or MouseIncDownloadUrl, not both.'
   }
@@ -181,6 +182,16 @@ try {
 
     $portableRoot = Join-Path $stageRoot 'portable'
     [IO.Directory]::CreateDirectory((Join-Path $portableRoot 'scripts')) | Out-Null
+    $frameworkPath = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319'
+    if (-not (Test-Path -LiteralPath (Join-Path $frameworkPath 'csc.exe'))) {
+      $frameworkPath = Join-Path $env:WINDIR 'Microsoft.NET/Framework/v4.0.30319'
+    }
+    $compilerPath = Join-Path $frameworkPath 'csc.exe'
+    Assert-RegularFile $compilerPath '.NET Framework C# compiler'
+    $launcherPath = Join-Path $portableRoot 'OpenSettings.exe'
+    & $compilerPath /nologo /target:winexe /optimize+ "/out:$launcherPath" /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll /reference:System.Windows.Forms.dll (Join-Path $repoRoot 'launcher/OpenSettings.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to compile the settings launcher.' }
+    Assert-RegularFile $launcherPath 'Compiled settings launcher'
     Copy-Item -LiteralPath $MouseIncExePath -Destination (Join-Path $portableRoot 'MouseInc.exe')
     Copy-Item -LiteralPath $settingsPath -Destination (Join-Path $portableRoot 'MouseInc.Settings.zip')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'scripts/ocr-local.ps1') -Destination (Join-Path $portableRoot 'scripts/ocr-local.ps1')
